@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en">
+
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<meta name="google" value="notranslate">
+
+<script>
+function addRow(name, url, isdir,
+    size, size_string, date_modified, date_modified_string) {
+  if (name == "." || name == "..")
+    return;
+
+  var root = document.location.pathname;
+  if (root.substr(-1) !== "/")
+    root += "/";
+
+  var tbody = document.getElementById("tbody");
+  var row = document.createElement("tr");
+  var file_cell = document.createElement("td");
+  var link = document.createElement("a");
+
+  link.className = isdir ? "icon dir" : "icon file";
+
+  if (isdir) {
+    name = name + "/";
+    url = url + "/";
+    size = 0;
+    size_string = "";
+  } else {
+    link.draggable = "true";
+    link.addEventListener("dragstart", onDragStart, false);
+  }
+  link.innerText = name;
+  link.href = root + url;
+
+  file_cell.dataset.value = name;
+  file_cell.appendChild(link);
+
+  row.appendChild(file_cell);
+  row.appendChild(createCell(size, size_string));
+  row.appendChild(createCell(date_modified, date_modified_string));
+
+  tbody.appendChild(row);
+}
+
+function onDragStart(e) {
+  var el = e.srcElement;
+  var name = el.innerText.replace(":", "");
+  var download_url_data = "application/octet-stream:" + name + ":" + el.href;
+  e.dataTransfer.setData("DownloadURL", download_url_data);
+  e.dataTransfer.effectAllowed = "copy";
+}
+
+function createCell(value, text) {
+  var cell = document.createElement("td");
+  cell.setAttribute("class", "detailsColumn");
+  cell.dataset.value = value;
+  cell.innerText = text;
+  return cell;
+}
+
+function start(location) {
+  var header = document.getElementById("header");
+  header.innerText = header.innerText.replace("LOCATION", location);
+
+  document.getElementById("title").innerText = header.innerText;
+}
+
+function onHasParentDirectory() {
+  var box = document.getElementById("parentDirLinkBox");
+  box.style.display = "block";
+
+  var root = document.location.pathname;
+  if (!root.endsWith("/"))
+    root += "/";
+
+  var link = document.getElementById("parentDirLink");
+  link.href = root + "..";
+}
+
+function sortTable(column) {
+  var theader = document.getElementById("theader");
+  var oldOrder = theader.cells[column].dataset.order || '1';
+  oldOrder = parseInt(oldOrder, 10)
+  var newOrder = 0 - oldOrder;
+  theader.cells[column].dataset.order = newOrder;
+
+  var tbody = document.getElementById("tbody");
+  var rows = tbody.rows;
+  var list = [], i;
+  for (i = 0; i < rows.length; i++) {
+    list.push(rows[i]);
+  }
+
+  list.sort(function(row1, row2) {
+    var a = row1.cells[column].dataset.value;
+    var b = row2.cells[column].dataset.value;
+    if (column) {
+      a = parseInt(a, 10);
+      b = parseInt(b, 10);
+      return a > b ? newOrder : a < b ? oldOrder : 0;
+    }
+
+    // Column 0 is text.
+    if (a > b)
+      return newOrder;
+    if (a < b)
+      return oldOrder;
+    return 0;
+  });
+
+  // Appending an existing child again just moves it.
+  for (i = 0; i < list.length; i++) {
+    tbody.appendChild(list[i]);
+  }
+}
+
+// Add event handlers to column headers.
+function addHandlers(element, column) {
+  element.onclick = (e) => sortTable(column);
+  element.onkeydown = (e) => {
+    if (e.key == 'Enter' || e.key == ' ') {
+      sortTable(column);
+      e.preventDefault();
+    }
+  };
+}
+
+function onLoad() {
+  addHandlers(document.getElementById('nameColumnHeader'), 0);
+  addHandlers(document.getElementById('sizeColumnHeader'), 1);
+  addHandlers(document.getElementById('dateColumnHeader'), 2);
+}
+
+window.addEventListener('DOMContentLoaded', onLoad);
+</script>
+
+<style>
+
+  h1 {
+    border-bottom: 1px solid #c0c0c0;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    white-space: nowrap;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  th {
+    cursor: pointer;
+  }
+
+  td.detailsColumn {
+    padding-inline-start: 2em;
+    text-align: end;
+    white-space: nowrap;
+  }
+
+  a.icon {
+    padding-inline-start: 1.5em;
+    text-decoration: none;
+    user-select: auto;
+  }
+
+  a.icon:hover {
+    text-decoration: underline;
+  }
+
+  a.file {
+    background : url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABnRSTlMAAAAAAABupgeRAAABEElEQVR42nRRx3HDMBC846AHZ7sP54BmWAyrsP588qnwlhqw/k4v5ZwWxM1hzmGRgV1cYqrRarXoH2w2m6qqiqKIR6cPtzc3xMSML2Te7XZZlnW7Pe/91/dX47WRBHuA9oyGmRknzGDjab1ePzw8bLfb6WRalmW4ip9FDVpYSWZgOp12Oh3nXJ7nxoJSGEciteP9y+fH52q1euv38WosqA6T2gGOT44vry7BEQtJkMAMMpa6JagAMcUfWYa4hkkzAc7fFlSjwqCoOUYAF5RjHZPVCFBOtSBGfgUDji3c3jpibeEMQhIMh8NwshqyRsBJgvF4jMs/YlVR5KhgNpuBLzk0OcUiR3CMhcPaOzsZiAAA/AjmaB3WZIkAAAAASUVORK5CYII=") left top no-repeat;
+  }
+
+  a.dir {
+    background : url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABt0lEQVR42oxStZoWQRCs2cXdHTLcHZ6EjAwnQWIkJyQlRt4Cd3d3d1n5d7q7ju1zv/q+mh6taQsk8fn29kPDRo87SDMQcNAUJgIQkBjdAoRKdXjm2mOH0AqS+PlkP8sfp0h93iu/PDji9s2FzSSJVg5ykZqWgfGRr9rAAAQiDFoB1OfyESZEB7iAI0lHwLREQBcQQKqo8p+gNUCguwCNAAUQAcFOb0NNGjT+BbUC2YsHZpWLhC6/m0chqIoM1LKbQIIBwlTQE1xAo9QDGDPYf6rkTpPc92gCUYVJAZjhyZltJ95f3zuvLYRGWWCUNkDL2333McBh4kaLlxg+aTmyL7c2xTjkN4Bt7oE3DBP/3SRz65R/bkmBRPGzcRNHYuzMjaj+fdnaFoJUEdTSXfaHbe7XNnMPyqryPcmfY+zURaAB7SHk9cXSH4fQ5rojgCAVIuqCNWgRhLYLhJB4k3iZfIPtnQiCpjAzeBIRXMA6emAqoEbQSoDdGxFUrxS1AYcpaNbBgyQBGJEOnYOeENKR/iAd1npusI4C75/c3539+nbUjOgZV5CkAU27df40lH+agUdIuA/EAgDmZnwZlhDc0wAAAABJRU5ErkJggg==") left top no-repeat;
+  }
+
+  a.up {
+    background : url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACM0lEQVR42myTA+w1RxRHz+zftmrbdlTbtq04qRGrCmvbDWp9tq3a7tPcub8mj9XZ3eHOGQdJAHw77/LbZuvnWy+c/CIAd+91CMf3bo+bgcBiBAGIZKXb19/zodsAkFT+3px+ssYfyHTQW5tr05dCOf3xN49KaVX9+2zy1dX4XMk+5JflN5MBPL30oVsvnvEyp+18Nt3ZAErQMSFOfelCFvw0HcUloDayljZkX+MmamTAMTe+d+ltZ+1wEaRAX/MAnkJdcujzZyErIiVSzCEvIiq4O83AG7LAkwsfIgAnbncag82jfPPdd9RQyhPkpNJvKJWQBKlYFmQA315n4YPNjwMAZYy0TgAweedLmLzTJSTLIxkWDaVCVfAbbiKjytgmm+EGpMBYW0WwwbZ7lL8anox/UxekaOW544HO0ANAshxuORT/RG5YSrjlwZ3lM955tlQqbtVMlWIhjwzkAVFB8Q9EAAA3AFJ+DR3DO/Pnd3NPi7H117rAzWjpEs8vfIqsGZpaweOfEAAFJKuM0v6kf2iC5pZ9+fmLSZfWBVaKfLLNOXj6lYY0V2lfyVCIsVzmcRV9Y0fx02eTaEwhl2PDrXcjFdYRAohQmS8QEFLCLKGYA0AeEakhCCFDXqxsE0AQACgAQp5w96o0lAXuNASeDKWIvADiHwigfBINpWKtAXJvCEKWgSJNbRvxf4SmrnKDpvZavePu1K/zu/due1X/6Nj90MBd/J2Cic7WjBp/jUdIuA8AUtd65M+PzXIAAAAASUVORK5CYII=") left top no-repeat;
+  }
+
+  html[dir=rtl] a {
+    background-position-x: right;
+  }
+
+  #parentDirLinkBox {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+</style>
+
+<title id="title"></title>
+
+</head>
+
+<body>
+
+<h1 id="header">Index of LOCATION</h1>
+
+<div id="parentDirLinkBox" style="display:none">
+  <a id="parentDirLink" class="icon up">
+    <span id="parentDirText">[parent directory]</span>
+  </a>
+</div>
+
+<table>
+  <thead>
+    <tr class="header" id="theader">
+      <th id="nameColumnHeader" tabindex=0 role="button">Name</th>
+      <th id="sizeColumnHeader" class="detailsColumn" tabindex=0 role="button">
+        Size
+      </th>
+      <th id="dateColumnHeader" class="detailsColumn" tabindex=0 role="button">
+        Date Modified
+      </th>
+    </tr>
+  </thead>
+  <tbody id="tbody">
+  </tbody>
+</table>
+
+</body>
+
+</html>
+<script>"use strict";
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+var loadTimeData;class LoadTimeData{constructor(){this.data_=null}set data(value){expect(!this.data_,"Re-setting data.");this.data_=value}valueExists(id){return id in this.data_}getValue(id){expect(this.data_,"No data. Did you remember to include strings.js?");const value=this.data_[id];expect(typeof value!=="undefined","Could not find value for "+id);return value}getString(id){const value=this.getValue(id);expectIsType(id,value,"string");return value}getStringF(id,var_args){const value=this.getString(id);if(!value){return""}const args=Array.prototype.slice.call(arguments);args[0]=value;return this.substituteString.apply(this,args)}substituteString(label,var_args){const varArgs=arguments;return label.replace(/\$(.|$|\n)/g,(function(m){expect(m.match(/\$[$1-9]/),"Unescaped $ found in localized string.");return m==="$$"?"$":varArgs[m[1]]}))}getBoolean(id){const value=this.getValue(id);expectIsType(id,value,"boolean");return value}getInteger(id){const value=this.getValue(id);expectIsType(id,value,"number");expect(value===Math.floor(value),"Number isn't integer: "+value);return value}overrideValues(replacements){expect(typeof replacements==="object","Replacements must be a dictionary object.");for(const key in replacements){this.data_[key]=replacements[key]}}}function expect(condition,message){if(!condition){throw new Error("Unexpected condition on "+document.location.href+": "+message)}}function expectIsType(id,value,type){expect(typeof value===type,"["+value+"] ("+id+") is not a "+type)}expect(!loadTimeData,"should only include this file once");loadTimeData=new LoadTimeData;window.loadTimeData=loadTimeData;console.warn("crbug/1173575, non-JS module files deprecated.");</script><script>loadTimeData.data = {"header":"Index of LOCATION","headerDateModified":"Date Modified","headerName":"Name","headerSize":"Size","language":"en","parentDirText":"[parent directory]","textdirection":"ltr"};</script><script>start("C:\\Users\\Gustavo\\Downloads\\Playable\\Township\\");</script>
+<script>onHasParentDirectory();</script>
+<script>addRow("desktop.ini","desktop.ini",0,5164,"5.0 kB",1711221260,"3/23/24, 3:14:20 PM");</script>
+<script>addRow("playable_demo.html","playable_demo.html",0,4714,"4.6 kB",1711220441,"3/23/24, 3:00:41 PM");</script>
+<script>addRow("tsplrx_playable018.html","tsplrx_playable018.html",0,1898271,"1.8 MB",1711220446,"3/23/24, 3:00:46 PM");</script>
+<script>addRow("tsplrx_playable019.html","tsplrx_playable019.html",0,2107694,"2.0 MB",1711220441,"3/23/24, 3:00:41 PM");</script>
+<script>addRow("tsplrx_playable021.html","tsplrx_playable021.html",0,2019565,"1.9 MB",1711220447,"3/23/24, 3:00:47 PM");</script>
+<script>addRow("tsplrx_playable022.html","tsplrx_playable022.html",0,1947415,"1.9 MB",1711220447,"3/23/24, 3:00:47 PM");</script>
+<script>addRow("tsplrx_playable023.html","tsplrx_playable023.html",0,2016671,"1.9 MB",1711220448,"3/23/24, 3:00:48 PM");</script>
+<script>addRow("tsplrx_playable026.html","tsplrx_playable026.html",0,2050116,"2.0 MB",1711220441,"3/23/24, 3:00:41 PM");</script>
+<script>addRow("tsplrx_playable027.html","tsplrx_playable027.html",0,1937479,"1.8 MB",1711220442,"3/23/24, 3:00:42 PM");</script>
+<script>addRow("tsplrx_playable031.html","tsplrx_playable031.html",0,1722298,"1.6 MB",1711220442,"3/23/24, 3:00:42 PM");</script>
+<script>addRow("tsplrx_playable032.html","tsplrx_playable032.html",0,1610069,"1.5 MB",1711220442,"3/23/24, 3:00:42 PM");</script>
+<script>addRow("tsplrx_playable036.html","tsplrx_playable036.html",0,1576179,"1.5 MB",1711220443,"3/23/24, 3:00:43 PM");</script>
+<script>addRow("tsplrx_playable037.html","tsplrx_playable037.html",0,2011216,"1.9 MB",1711220443,"3/23/24, 3:00:43 PM");</script>
+<script>addRow("tsplrx_playable042.html","tsplrx_playable042.html",0,2669520,"2.5 MB",1711220448,"3/23/24, 3:00:48 PM");</script>
+<script>addRow("tsplrx_playable043.html","tsplrx_playable043.html",0,1967242,"1.9 MB",1711220444,"3/23/24, 3:00:44 PM");</script>
+<script>addRow("tsplrx_playable046.html","tsplrx_playable046.html",0,2297381,"2.2 MB",1711220444,"3/23/24, 3:00:44 PM");</script>
+<script>addRow("tsplrx_playable047.html","tsplrx_playable047.html",0,3754631,"3.6 MB",1711220450,"3/23/24, 3:00:50 PM");</script>
+<script>addRow("tsplrx_playable048.html","tsplrx_playable048.html",0,2593065,"2.5 MB",1711220432,"3/23/24, 3:00:32 PM");</script>
+<script>addRow("tsplrx_playable049.html","tsplrx_playable049.html",0,2841211,"2.7 MB",1711220450,"3/23/24, 3:00:50 PM");</script>
+<script>addRow("tsplrx_playable050.html","tsplrx_playable050.html",0,2113575,"2.0 MB",1711220451,"3/23/24, 3:00:51 PM");</script>
+<script>addRow("tsplrx_playable052.html","tsplrx_playable052.html",0,3045673,"2.9 MB",1711220457,"3/23/24, 3:00:57 PM");</script>
+<script>addRow("tsplrx_playable053.html","tsplrx_playable053.html",0,2711431,"2.6 MB",1711220452,"3/23/24, 3:00:52 PM");</script>
+<script>addRow("tsplrx_playable054.html","tsplrx_playable054.html",0,2044219,"1.9 MB",1711220432,"3/23/24, 3:00:32 PM");</script>
+<script>addRow("tsplrx_playable056.html","tsplrx_playable056.html",0,2506696,"2.4 MB",1711220433,"3/23/24, 3:00:33 PM");</script>
+<script>addRow("tsplrx_playable057.html","tsplrx_playable057.html",0,3177103,"3.0 MB",1711220453,"3/23/24, 3:00:53 PM");</script>
+<script>addRow("tsplrx_playable058.html","tsplrx_playable058.html",0,2329804,"2.2 MB",1711220444,"3/23/24, 3:00:44 PM");</script>
+<script>addRow("tsplrx_playable060.html","tsplrx_playable060.html",0,2292561,"2.2 MB",1711220453,"3/23/24, 3:00:53 PM");</script>
+<script>addRow("tsplrx_playable061.html","tsplrx_playable061.html",0,2545485,"2.4 MB",1711220468,"3/23/24, 3:01:08 PM");</script>
+<script>addRow("tsplrx_playable069.html","tsplrx_playable069.html",0,2806850,"2.7 MB",1711220454,"3/23/24, 3:00:54 PM");</script>
+<script>addRow("tsplrx_playable073.html","tsplrx_playable073.html",0,2392807,"2.3 MB",1711220445,"3/23/24, 3:00:45 PM");</script>
+<script>addRow("tsplrx_playable080.html","tsplrx_playable080.html",0,2243372,"2.1 MB",1711220445,"3/23/24, 3:00:45 PM");</script>
+<script>addRow("tsplrx_playable086.html","tsplrx_playable086.html",0,2180162,"2.1 MB",1711220446,"3/23/24, 3:00:46 PM");</script>
+<script>addRow("tsplrx_playabletsmg001.html","tsplrx_playabletsmg001.html",0,2773235,"2.6 MB",1711220454,"3/23/24, 3:00:54 PM");</script>
+<script>addRow("tsplrx_playabletsmg002.html","tsplrx_playabletsmg002.html",0,2469280,"2.4 MB",1711220461,"3/23/24, 3:01:01 PM");</script>
+<script>addRow("tsplrx_playabletsmg003.html","tsplrx_playabletsmg003.html",0,2422838,"2.3 MB",1711220462,"3/23/24, 3:01:02 PM");</script>
+<script>addRow("tsplrx_playabletsmg004.html","tsplrx_playabletsmg004.html",0,2543730,"2.4 MB",1711220462,"3/23/24, 3:01:02 PM");</script>
+<script>addRow("tsplrx_playabletsmg005.html","tsplrx_playabletsmg005.html",0,3115784,"3.0 MB",1711220458,"3/23/24, 3:00:58 PM");</script>
+<script>addRow("tsplrx_playabletsmg006.html","tsplrx_playabletsmg006.html",0,3108842,"3.0 MB",1711220458,"3/23/24, 3:00:58 PM");</script>
+<script>addRow("tsplrx_playabletsmg007.html","tsplrx_playabletsmg007.html",0,3125490,"3.0 MB",1711220459,"3/23/24, 3:00:59 PM");</script>
+<script>addRow("tsplrx_playabletsmg008.html","tsplrx_playabletsmg008.html",0,2392244,"2.3 MB",1711220469,"3/23/24, 3:01:09 PM");</script>
+<script>addRow("tsplrx_playabletsmg009.html","tsplrx_playabletsmg009.html",0,2453473,"2.3 MB",1711220465,"3/23/24, 3:01:05 PM");</script>
+<script>addRow("tsplrx_playabletsmg010.html","tsplrx_playabletsmg010.html",0,2701451,"2.6 MB",1711220469,"3/23/24, 3:01:09 PM");</script>
+<script>addRow("tsplrx_playabletsmg011.html","tsplrx_playabletsmg011.html",0,2543988,"2.4 MB",1711220463,"3/23/24, 3:01:03 PM");</script>
+<script>addRow("tsplrx_playabletsmg012.html","tsplrx_playabletsmg012.html",0,2194012,"2.1 MB",1711220466,"3/23/24, 3:01:06 PM");</script>
+<script>addRow("tsplrx_playabletsmg013.html","tsplrx_playabletsmg013.html",0,2414895,"2.3 MB",1711220466,"3/23/24, 3:01:06 PM");</script>
+<script>addRow("tsplrx_playabletsmg014.html","tsplrx_playabletsmg014.html",0,2253264,"2.1 MB",1711220467,"3/23/24, 3:01:07 PM");</script>
+<script>addRow("tsplrx_playabletsmg015.html","tsplrx_playabletsmg015.html",0,2238434,"2.1 MB",1711220467,"3/23/24, 3:01:07 PM");</script>
+<script>addRow("tsplrx_playabletsmg016.html","tsplrx_playabletsmg016.html",0,2453652,"2.3 MB",1711220467,"3/23/24, 3:01:07 PM");</script>
+<script>addRow("tsplrx_playabletsmg017.html","tsplrx_playabletsmg017.html",0,3177878,"3.0 MB",1711220468,"3/23/24, 3:01:08 PM");</script>
+<script>addRow("tsplrx_playabletsmg018.html","tsplrx_playabletsmg018.html",0,2339945,"2.2 MB",1711220469,"3/23/24, 3:01:09 PM");</script>
+<script>addRow("tsplrx_playabletsmg019.html","tsplrx_playabletsmg019.html",0,2104647,"2.0 MB",1711220470,"3/23/24, 3:01:10 PM");</script>
+<script>addRow("tsplrx_playabletsmg021.html","tsplrx_playabletsmg021.html",0,2402441,"2.3 MB",1711220454,"3/23/24, 3:00:54 PM");</script>
+<script>addRow("tsplrx_playabletsmg022.html","tsplrx_playabletsmg022.html",0,2702460,"2.6 MB",1711220459,"3/23/24, 3:00:59 PM");</script>
+<script>addRow("tsplrx_playabletsmg023.html","tsplrx_playabletsmg023.html",0,2974586,"2.8 MB",1711220455,"3/23/24, 3:00:55 PM");</script>
+<script>addRow("tsplrx_playabletsmg024.html","tsplrx_playabletsmg024.html",0,3687849,"3.5 MB",1711220456,"3/23/24, 3:00:56 PM");</script>
+<script>addRow("tsplrx_playabletsmg025.html","tsplrx_playabletsmg025.html",0,2874456,"2.7 MB",1711220460,"3/23/24, 3:01:00 PM");</script>
+<script>addRow("tsplrx_playabletsmg026.html","tsplrx_playabletsmg026.html",0,3118563,"3.0 MB",1711220463,"3/23/24, 3:01:03 PM");</script>
+<script>addRow("tsplrx_playabletsmg027.html","tsplrx_playabletsmg027.html",0,2891848,"2.8 MB",1711220461,"3/23/24, 3:01:01 PM");</script>
+<script>addRow("tsplrx_playabletsmg028.html","tsplrx_playabletsmg028.html",0,3136891,"3.0 MB",1711220464,"3/23/24, 3:01:04 PM");</script>
+<script>addRow("tsplrx_playabletsmg029.html","tsplrx_playabletsmg029.html",0,2829735,"2.7 MB",1711220464,"3/23/24, 3:01:04 PM");</script>
+<script>addRow("tsplrx_playabletsmg030.html","tsplrx_playabletsmg030.html",0,2450924,"2.3 MB",1711220461,"3/23/24, 3:01:01 PM");</script>
+<script>addRow("tsplrx_playabletsmg031.html","tsplrx_playabletsmg031.html",0,3103338,"3.0 MB",1711220471,"3/23/24, 3:01:11 PM");</script>
+<script>addRow("tsplrx_playabletsmg032.html","tsplrx_playabletsmg032.html",0,2742899,"2.6 MB",1711220472,"3/23/24, 3:01:12 PM");</script>
+<script>addRow("tsplrx_playabletsmg033.html","tsplrx_playabletsmg033.html",0,2920203,"2.8 MB",1711220472,"3/23/24, 3:01:12 PM");</script>
+<script>addRow("tsplrx_playabletsmg044.html","tsplrx_playabletsmg044.html",0,3974254,"3.8 MB",1711220434,"3/23/24, 3:00:34 PM");</script>
+<script>addRow("tsplrx_playabletsmg045.html","tsplrx_playabletsmg045.html",0,3428626,"3.3 MB",1711220434,"3/23/24, 3:00:34 PM");</script>
+<script>addRow("tsplrx_playabletsmg047.html","tsplrx_playabletsmg047.html",0,2829499,"2.7 MB",1711220435,"3/23/24, 3:00:35 PM");</script>
+<script>addRow("tsplrx_playabletsmg048.html","tsplrx_playabletsmg048.html",0,3165723,"3.0 MB",1711220429,"3/23/24, 3:00:29 PM");</script>
+<script>addRow("tsplrx_playabletsmg054.html","tsplrx_playabletsmg054.html",0,5651454,"5.4 MB",1711220436,"3/23/24, 3:00:36 PM");</script>
+<script>addRow("tsplrx_playabletsmg055.html","tsplrx_playabletsmg055.html",0,3202962,"3.1 MB",1711220437,"3/23/24, 3:00:37 PM");</script>
+<script>addRow("tsplrx_playabletsmg056.html","tsplrx_playabletsmg056.html",0,5049098,"4.8 MB",1711220438,"3/23/24, 3:00:38 PM");</script>
+<script>addRow("tsplrx_playabletsmg057.html","tsplrx_playabletsmg057.html",0,4709703,"4.5 MB",1711220439,"3/23/24, 3:00:39 PM");</script>
+<script>addRow("tsplrx_playabletsmg058.html","tsplrx_playabletsmg058.html",0,5259356,"5.0 MB",1711220440,"3/23/24, 3:00:40 PM");</script>
+<script>addRow("tsplrx_playabletsmg059.html","tsplrx_playabletsmg059.html",0,6356418,"6.1 MB",1711220431,"3/23/24, 3:00:31 PM");</script>
+<script>addRow("tsplrx_playabletsmg060.html","tsplrx_playabletsmg060.html",0,2754713,"2.6 MB",1711220472,"3/23/24, 3:01:12 PM");</script>
+<script>addRow("tsplrx_playabletsmg061.html","tsplrx_playabletsmg061.html",0,4016923,"3.8 MB",1711220473,"3/23/24, 3:01:13 PM");</script>
+<script>addRow("tsplrx_playabletsmg062.html","tsplrx_playabletsmg062.html",0,5999211,"5.7 MB",1711220475,"3/23/24, 3:01:15 PM");</script>
+<script>addRow("tsplrx_playabletsmg063.html","tsplrx_playabletsmg063.html",0,4902843,"4.7 MB",1711220475,"3/23/24, 3:01:15 PM");</script>
+<script>addRow("tsplrx_playabletsmg064.html","tsplrx_playabletsmg064.html",0,3462381,"3.3 MB",1711220476,"3/23/24, 3:01:16 PM");</script>
+<script>addRow("tsplrx_playabletsmg065.html","tsplrx_playabletsmg065.html",0,4818947,"4.6 MB",1711220478,"3/23/24, 3:01:18 PM");</script>
+<script>addRow("tsplrx_playabletsmg066.html","tsplrx_playabletsmg066.html",0,3351326,"3.2 MB",1711220478,"3/23/24, 3:01:18 PM");</script>
+<script>addRow("tsplrx_playabletsmg067.html","tsplrx_playabletsmg067.html",0,4692505,"4.5 MB",1711220479,"3/23/24, 3:01:19 PM");</script>
+<script>addRow("tsplrx_playabletsmg068.html","tsplrx_playabletsmg068.html",0,4027599,"3.8 MB",1711220480,"3/23/24, 3:01:20 PM");</script>
+<script>addRow("tsplrx_playabletsmg069.html","tsplrx_playabletsmg069.html",0,4033384,"3.8 MB",1711220480,"3/23/24, 3:01:20 PM");</script>
+<script>addRow("tsplrx_playabletsmg070.html","tsplrx_playabletsmg070.html",0,3857923,"3.7 MB",1711220482,"3/23/24, 3:01:22 PM");</script>
+<script>addRow("tsplrx_playabletsmg071.html","tsplrx_playabletsmg071.html",0,4201348,"4.0 MB",1711220483,"3/23/24, 3:01:23 PM");</script>
+<script>addRow("tsplrx_playabletsmg072.html","tsplrx_playabletsmg072.html",0,3789341,"3.6 MB",1711220483,"3/23/24, 3:01:23 PM");</script>
+<script>addRow("tsplrx_playabletsmg073.html","tsplrx_playabletsmg073.html",0,4375187,"4.2 MB",1711220484,"3/23/24, 3:01:24 PM");</script>
+<script>addRow("tsplrx_playabletsmg074.html","tsplrx_playabletsmg074.html",0,2414792,"2.3 MB",1711220485,"3/23/24, 3:01:25 PM");</script>
+<script>addRow("tsplrx_playabletsmg076.html","tsplrx_playabletsmg076.html",0,2847676,"2.7 MB",1711220485,"3/23/24, 3:01:25 PM");</script>
+<script>addRow("tsplrx_playabletsmg077.html","tsplrx_playabletsmg077.html",0,2996591,"2.9 MB",1711220486,"3/23/24, 3:01:26 PM");</script>
